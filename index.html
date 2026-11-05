@@ -3,1694 +3,599 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Star Warrior - Realistic Aerospace Presentation</title>
+    <title>Star Warrior - Diego Matías Presentation</title>
     <style>
+        /* ================= VARIABLES & RESET ================= */
         :root {
-            --space-black: #020409;
-            --panel-bg: rgba(9, 16, 28, 0.94);
-            --panel-border: rgba(0, 240, 255, 0.35);
-            --cyan-neon: #00f0ff;
-            --cyan-glow: 0 0 16px rgba(0, 240, 255, 0.55);
-            --gold-amber: #f59e0b;
-            --alert-red: #ef4444;
-            --status-green: #10b981;
-            --electric-blue: #38bdf8;
-            --titanium: #94a3b8;
-            --text-primary: #f8fafc;
-            --text-secondary: #94a3b8;
-            --font-ui: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            --font-mono: 'Consolas', 'Courier New', monospace;
+            --bg-dark: #070B14;
+            --bg-light: #162032;
+            --cyan: #00F0FF;
+            --purple: #B026FF;
+            --orange: #FF5722;
+            --white: #FFFFFF;
+            --gray: #8A9BB4;
+            --font-main: 'Trebuchet MS', 'Arial Rounded MT Bold', system-ui, -apple-system, sans-serif;
         }
 
         * {
-            box-sizing: border-box;
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
             user-select: none;
-            -webkit-user-select: none;
         }
 
         body {
-            background-color: var(--space-black);
-            color: var(--text-primary);
-            font-family: var(--font-ui);
+            background: radial-gradient(circle at bottom, var(--bg-light) 0%, var(--bg-dark) 100%);
+            color: var(--white);
+            font-family: var(--font-main);
             height: 100vh;
             width: 100vw;
             overflow: hidden;
             display: flex;
             flex-direction: column;
-            position: relative;
         }
 
-        /* CRT / Sensor Hologram Overlay Effects */
-        .scanline-grid {
-            position: fixed;
-            inset: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%),
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
-            background-size: 100% 3px, 6px 100%;
+        /* ================= ANIMATIONS ================= */
+        @keyframes twinkle {
+            0% { opacity: 0.1; transform: scale(0.8); }
+            100% { opacity: 1; transform: scale(1.2) rotate(15deg); }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 10px var(--cyan), 0 0 20px var(--cyan); }
+            50% { box-shadow: 0 0 25px var(--cyan), 0 0 40px var(--cyan); }
+        }
+        @keyframes flameFlicker {
+            0% { transform: scaleY(1) scaleX(1); opacity: 0.9; }
+            100% { transform: scaleY(1.2) scaleX(1.1); opacity: 1; }
+        }
+
+        /* ================= BACKGROUND STARS ================= */
+        #stars-container {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            z-index: 0;
             pointer-events: none;
-            z-index: 999;
-            opacity: 0.75;
         }
-
-        .hud-vignette {
-            position: fixed;
-            inset: 0;
-            box-shadow: inset 0 0 110px rgba(0, 0, 0, 0.9), inset 0 0 45px rgba(0, 240, 255, 0.12);
-            pointer-events: none;
-            z-index: 998;
-        }
-
-        #bg-canvas {
-            position: fixed;
-            inset: 0;
-            z-index: 1;
-        }
-
-        /* Mission Control Top Telemetry Bar */
-        #telemetry-bar {
-            position: relative;
-            z-index: 50;
-            height: 48px;
-            background: rgba(4, 9, 20, 0.95);
-            border-bottom: 1px solid var(--panel-border);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 24px;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            letter-spacing: 1.5px;
-            backdrop-filter: blur(8px);
-        }
-
-        .telem-group {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background-color: var(--status-green);
+        .star {
+            position: absolute;
+            background-color: var(--white);
             border-radius: 50%;
-            box-shadow: 0 0 8px var(--status-green);
-            animation: pulse-beacon 1.4s infinite alternate;
         }
 
-        @keyframes pulse-beacon {
-            0% { transform: scale(0.85); opacity: 0.4; }
-            100% { transform: scale(1.3); opacity: 1; }
-        }
-
-        .top-btn {
-            background: rgba(0, 240, 255, 0.08);
-            border: 1px solid var(--panel-border);
-            color: var(--cyan-neon);
-            padding: 5px 12px;
-            border-radius: 4px;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .top-btn:hover {
-            background: var(--cyan-neon);
-            color: var(--space-black);
-            box-shadow: var(--cyan-glow);
-        }
-
-        /* Presentation Slide Stage */
-        #stage-viewport {
+        /* ================= SLIDE SYSTEM ================= */
+        #presentation-area {
             position: relative;
+            flex: 1;
             z-index: 10;
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px 24px 76px 24px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
-        .slide-frame {
+        .slide {
             position: absolute;
-            width: calc(100% - 48px);
-            max-width: 1380px;
-            height: calc(100% - 90px);
+            top: 0; left: 0; right: 0; bottom: 0;
             opacity: 0;
-            visibility: hidden;
-            transform: scale(0.97) translateY(10px);
-            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s;
+            pointer-events: none;
+            transition: opacity 0.6s ease, transform 0.6s ease;
+            transform: scale(0.95);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            pointer-events: none;
+            padding: 2rem;
+            padding-bottom: 80px; /* Space for nav */
         }
-        .slide-frame.active {
+        .slide.active {
             opacity: 1;
-            visibility: visible;
-            transform: scale(1) translateY(0);
             pointer-events: auto;
+            transform: scale(1);
         }
 
-        /* Headers */
-        .stage-title-wrap {
-            text-align: center;
-            margin-bottom: 18px;
-        }
-        .badge-sector {
-            font-family: var(--font-mono);
-            color: var(--cyan-neon);
-            font-size: 0.78rem;
-            letter-spacing: 2.5px;
-            text-transform: uppercase;
-        }
-        .main-heading {
-            font-size: 2.4rem;
-            font-weight: 800;
-            letter-spacing: 1px;
-            text-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
-            margin: 2px 0;
-        }
-        .sub-heading {
-            font-size: 1.05rem;
-            color: var(--text-secondary);
-        }
-
-        /* ================= SLIDE 0: LAUNCH BAY ================= */
-        .launch-hero-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 18px;
-            padding: 38px 60px;
-            text-align: center;
-            box-shadow: 0 0 50px rgba(0, 0, 0, 0.9), var(--cyan-glow);
-            max-width: 820px;
-            position: relative;
-            backdrop-filter: blur(14px);
-        }
-        .flight-id-strip {
-            display: inline-block;
-            font-family: var(--font-mono);
-            color: var(--gold-amber);
-            border: 1px solid var(--gold-amber);
-            padding: 4px 14px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            margin-bottom: 14px;
-            letter-spacing: 2px;
-            background: rgba(245, 158, 11, 0.08);
-        }
-        .ship-giant-name {
-            font-size: 4.5rem;
-            font-weight: 900;
-            letter-spacing: 6px;
-            background: linear-gradient(180deg, #ffffff 30%, #94a3b8 70%, var(--cyan-neon) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            text-shadow: 0 0 40px rgba(0, 240, 255, 0.35);
-            line-height: 1.1;
-        }
-        .pilot-credentials {
-            margin: 24px 0 32px 0;
-            padding: 14px 28px;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            display: inline-block;
-        }
-        .pilot-title {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-family: var(--font-mono);
-            letter-spacing: 1.5px;
-        }
-        .pilot-name {
-            font-size: 2.3rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-top: 4px;
-        }
-        .pilot-subtitle {
-            font-size: 1rem;
-            color: var(--cyan-neon);
-            margin-top: 2px;
-            font-weight: 600;
-        }
-        .btn-ignite {
-            background: linear-gradient(135deg, var(--cyan-neon) 0%, #0284c7 100%);
-            color: #020617;
-            font-family: var(--font-ui);
-            font-size: 1.4rem;
-            font-weight: 800;
-            padding: 16px 48px;
+        /* ================= TYPOGRAPHY & BUTTONS ================= */
+        h1 { font-size: 5rem; color: var(--cyan); text-shadow: 0 0 20px rgba(0, 240, 255, 0.5); margin-bottom: 10px; text-align: center;}
+        h2 { font-size: 3rem; color: var(--orange); margin-bottom: 2rem; text-align: center; }
+        .subtitle { font-size: 2rem; color: var(--purple); text-transform: uppercase; letter-spacing: 3px; margin-bottom: 30px;}
+        
+        .btn {
+            background-color: var(--orange);
+            color: var(--white);
             border: none;
-            border-radius: 40px;
+            padding: 15px 40px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
             cursor: pointer;
-            box-shadow: 0 0 25px rgba(0, 240, 255, 0.65), inset 0 0 8px #ffffff;
-            transition: all 0.25s ease;
-            letter-spacing: 2px;
+            transition: all 0.3s;
+            font-family: var(--font-main);
         }
-        .btn-ignite:hover {
-            transform: scale(1.05);
-            background: #ffffff;
-            box-shadow: 0 0 45px rgba(0, 240, 255, 0.95);
+        .btn-start {
+            animation: pulseGlow 2s infinite;
+            background-color: var(--cyan);
+            color: var(--bg-dark);
+            margin-top: 30px;
         }
+        .btn-start:hover { transform: scale(1.1); background-color: var(--white); }
 
-        /* ================= SLIDE 1: REALISTIC INTERIOR SCHEMATICS ================= */
-        .interior-layout {
-            display: grid;
-            grid-template-columns: 460px 1fr;
-            gap: 24px;
-            width: 100%;
-            height: calc(100% - 70px);
-            align-items: center;
-        }
-
-        .interior-module-list {
+        /* ================= SLIDE 1 & 3: CARDS ================= */
+        .card-grid {
             display: flex;
-            flex-direction: column;
-            gap: 10px;
-            overflow-y: auto;
-            max-height: 520px;
-            padding-right: 6px;
+            flex-wrap: wrap;
+            gap: 20px;
+            justify-content: center;
+            width: 100%;
         }
-        .interior-module-list::-webkit-scrollbar { width: 4px; }
-        .interior-module-list::-webkit-scrollbar-thumb { background: var(--cyan-neon); border-radius: 2px; }
-
-        .module-tab-card {
-            background: var(--panel-bg);
-            border: 1px solid rgba(0, 240, 255, 0.2);
-            border-radius: 12px;
-            padding: 12px 16px;
+        .card {
+            background: rgba(22, 32, 50, 0.8);
+            border: 2px solid var(--purple);
+            border-radius: 20px;
+            padding: 20px;
+            width: 250px;
+            text-align: center;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            transition: all 0.22s ease;
+            transition: all 0.3s;
+            box-shadow: 0 8px 15px rgba(0,0,0,0.5);
         }
-        .module-tab-card:hover {
-            border-color: var(--cyan-neon);
-            background: rgba(14, 28, 54, 0.9);
-            transform: translateX(4px);
+        .card:hover, .card.active-card {
+            transform: translateY(-10px);
+            background: rgba(176, 38, 255, 0.2);
+            border-color: var(--cyan);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
         }
-        .module-tab-card.active-tab {
-            border-color: var(--cyan-neon);
-            background: linear-gradient(90deg, rgba(0, 240, 255, 0.18) 0%, rgba(9, 16, 28, 0.95) 100%);
-            box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
-            border-left: 4px solid var(--cyan-neon);
+        .card .emoji { font-size: 4rem; margin-bottom: 10px; }
+        .card h3 { font-size: 1.5rem; color: var(--white); margin-bottom: 10px; }
+        .card .desc {
+            font-size: 1.1rem; color: var(--cyan); display: none; margin-top: 10px;
+            border-top: 1px solid rgba(255,255,255,0.2); padding-top: 10px;
         }
-        .module-icon-hex {
-            width: 44px;
-            height: 44px;
-            background: rgba(0, 240, 255, 0.1);
-            border: 1px solid var(--cyan-neon);
-            border-radius: 10px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 1.4rem;
-            flex-shrink: 0;
-        }
-        .module-meta-name {
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: #ffffff;
-        }
-        .module-meta-sub {
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
+        .card.active-card .desc { display: block; animation: fadeIn 0.5s; }
 
-        .interior-cutaway-display {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 18px;
-            height: 520px;
-            position: relative;
+        /* ================= SLIDE 2: SVG ROCKET ================= */
+        .rocket-container {
             display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
-        }
-        .cutaway-header-bar {
-            background: rgba(0, 0, 0, 0.45);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 10px 18px;
-            display: flex;
-            justify-content: space-between;
+            flex-direction: row;
             align-items: center;
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--cyan-neon);
-        }
-        .cutaway-canvas-body {
-            flex: 1;
-            position: relative;
-            display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
-        .cutaway-desc-bar {
-            background: rgba(4, 9, 20, 0.9);
-            border-top: 1px solid rgba(0, 240, 255, 0.25);
-            padding: 14px 20px;
-        }
-        .speech-quote-text {
-            font-size: 1.25rem;
-            color: var(--cyan-neon);
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-        .realism-specs-text {
-            font-size: 0.85rem;
-            color: var(--text-secondary);
-            font-family: var(--font-mono);
-        }
-
-        /* ================= SLIDE 2: REALISTIC EXTERIOR BLUEPRINT ================= */
-        .exterior-layout {
-            display: grid;
-            grid-template-columns: 500px 1fr;
-            gap: 28px;
+            gap: 50px;
             width: 100%;
-            height: calc(100% - 70px);
-            align-items: center;
         }
-
-        .blueprint-viewport {
-            background: radial-gradient(circle at 50% 50%, rgba(2, 28, 62, 0.6) 0%, rgba(2, 6, 17, 0.95) 85%);
-            border: 1px solid var(--cyan-neon);
-            border-radius: 18px;
-            height: 520px;
+        .rocket-drawing {
             position: relative;
-            box-shadow: inset 0 0 40px rgba(0, 240, 255, 0.15), 0 0 30px rgba(0, 0, 0, 0.9);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden;
+            width: 300px;
+            height: 450px;
+            animation: float 4s ease-in-out infinite;
         }
-
-        .grid-blueprint-lines {
+        .flame-anim { animation: flameFlicker 0.1s infinite alternate; transform-origin: top center; }
+        
+        .hotspot {
             position: absolute;
-            inset: 0;
-            background-size: 24px 24px;
-            background-image: 
-                linear-gradient(to right, rgba(0, 240, 255, 0.08) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(0, 240, 255, 0.08) 1px, transparent 1px);
-            pointer-events: none;
-        }
-
-        .exterior-hud-panel {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 18px;
-            height: 520px;
-            padding: 24px 28px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            box-shadow: 0 0 35px rgba(0, 0, 0, 0.8);
-        }
-
-        .part-nav-pills {
-            display: grid;
-            grid-template-columns: repeat(5, 1fr);
-            gap: 6px;
-            margin-bottom: 14px;
-        }
-        .pill-btn {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            color: var(--text-secondary);
-            font-family: var(--font-mono);
-            font-size: 0.7rem;
-            padding: 7px 4px;
-            border-radius: 6px;
-            text-align: center;
+            width: 30px; height: 30px;
+            background: var(--cyan);
+            border: 3px solid var(--white);
+            border-radius: 50%;
             cursor: pointer;
-            transition: all 0.2s ease;
+            display: flex; justify-content: center; align-items: center;
+            font-weight: bold; color: var(--bg-dark);
+            box-shadow: 0 0 15px var(--cyan);
+            transition: transform 0.2s;
         }
-        .pill-btn:hover, .pill-btn.active-pill {
-            background: var(--cyan-neon);
-            color: var(--space-black);
-            font-weight: 700;
-            border-color: var(--cyan-neon);
-            box-shadow: 0 0 12px var(--cyan-neon);
+        .hotspot:hover { transform: scale(1.3); background: var(--white); }
+        .hotspot::after {
+            content: ''; position: absolute; width: 100%; height: 100%;
+            border-radius: 50%; border: 2px solid var(--cyan);
+            animation: ping 1.5s infinite;
+        }
+        @keyframes ping {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
         }
 
-        .ext-inspect-content {
-            flex: 1;
+        .rocket-info {
+            background: rgba(22, 32, 50, 0.9);
+            border: 3px solid var(--orange);
+            border-radius: 20px;
+            padding: 30px;
+            width: 350px;
+            min-height: 250px;
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
-        .ext-part-title {
-            font-size: 2.1rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 8px;
-        }
-        .ext-speech-callout {
-            font-size: 1.25rem;
-            color: var(--cyan-neon);
-            font-weight: 700;
-            margin-bottom: 14px;
-            background: rgba(0, 240, 255, 0.08);
-            border-left: 3px solid var(--cyan-neon);
-            padding: 10px 14px;
-            border-radius: 0 8px 8px 0;
-        }
-        .ext-engineering-breakdown {
-            font-size: 0.95rem;
-            color: var(--text-secondary);
-            line-height: 1.6;
-            margin-bottom: 16px;
-        }
-        .telem-specs-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            font-family: var(--font-mono);
-            font-size: 0.78rem;
-        }
-        .spec-tile {
-            background: rgba(0, 0, 0, 0.45);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 8px 10px;
-            border-radius: 8px;
-        }
-        .spec-label {
-            color: var(--text-secondary);
-            font-size: 0.68rem;
-        }
-        .spec-val {
-            color: var(--gold-amber);
-            font-weight: 700;
-            margin-top: 2px;
-            font-size: 0.85rem;
-        }
+        .rocket-info h3 { color: var(--orange); font-size: 2rem; margin-bottom: 15px; }
+        .rocket-info p { font-size: 1.3rem; line-height: 1.5; color: var(--white); }
 
-        /* SVG Hotspots */
-        .hotspot-node {
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .hotspot-node:hover circle.halo {
-            stroke: var(--cyan-neon);
-            stroke-width: 3px;
-        }
-        .hotspot-node.active-node circle.core {
-            fill: var(--gold-amber);
-        }
-
-        /* ================= SLIDE 3: MISSIONS ================= */
-        .missions-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
+        /* ================= SLIDE 4: SPEECH HELPER ================= */
+        .speech-container {
             width: 100%;
-            max-width: 1240px;
-        }
-        .mission-objective-card {
-            background: var(--panel-bg);
-            border: 1px solid var(--panel-border);
-            border-radius: 18px;
-            padding: 24px 20px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            position: relative;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.7);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .mission-objective-card:hover {
-            transform: translateY(-8px);
-            border-color: var(--cyan-neon);
-            box-shadow: 0 0 35px rgba(0, 240, 255, 0.35);
-        }
-        .mission-objective-card.selected-mission {
-            border-color: var(--gold-amber);
-            background: linear-gradient(180deg, rgba(245, 158, 11, 0.12) 0%, rgba(9, 16, 28, 0.95) 100%);
-            box-shadow: 0 0 30px rgba(245, 158, 11, 0.3);
-        }
-        .mission-svg-radar {
-            width: 140px;
-            height: 140px;
-            margin-bottom: 14px;
-        }
-        .mission-id-tag {
-            font-family: var(--font-mono);
-            font-size: 0.72rem;
-            color: var(--cyan-neon);
-            letter-spacing: 2px;
-            margin-bottom: 6px;
-        }
-        .mission-name {
-            font-size: 1.45rem;
-            font-weight: 800;
-            color: #ffffff;
-            margin-bottom: 10px;
-        }
-        .mission-speech-text {
-            font-size: 1.05rem;
-            color: var(--cyan-neon);
-            font-weight: 600;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-        .mission-tech-spec {
-            font-size: 0.8rem;
-            color: var(--text-secondary);
-            font-family: var(--font-mono);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            padding-top: 8px;
-            margin-top: auto;
-            width: 100%;
-        }
-
-        /* ================= SLIDE 4: TELEPROMPTER ================= */
-        .teleprompter-shell {
-            width: 100%;
-            max-width: 980px;
+            max-width: 900px;
             height: 60vh;
-            background: var(--panel-bg);
-            border: 1px solid var(--cyan-neon);
-            border-radius: 18px;
-            padding: 24px;
             overflow-y: auto;
-            box-shadow: 0 0 40px rgba(0, 240, 255, 0.2);
+            padding-right: 15px;
         }
-        .teleprompter-shell::-webkit-scrollbar { width: 6px; }
-        .teleprompter-shell::-webkit-scrollbar-thumb { background: var(--cyan-neon); border-radius: 3px; }
+        /* Custom scrollbar */
+        .speech-container::-webkit-scrollbar { width: 10px; }
+        .speech-container::-webkit-scrollbar-track { background: var(--bg-light); border-radius: 10px;}
+        .speech-container::-webkit-scrollbar-thumb { background: var(--purple); border-radius: 10px; }
 
-        .tele-box {
-            background: rgba(0, 0, 0, 0.4);
-            border-left: 4px solid var(--cyan-neon);
+        .speech-box {
+            background: rgba(0, 0, 0, 0.5);
+            border-left: 8px solid var(--cyan);
             border-radius: 10px;
-            padding: 16px 20px;
-            margin-bottom: 16px;
-            transition: all 0.2s ease;
+            padding: 20px;
+            margin-bottom: 20px;
         }
-        .tele-box:hover {
-            background: rgba(0, 240, 255, 0.05);
-            transform: translateX(4px);
+        .speech-box p.english { font-size: 1.8rem; font-weight: bold; margin-bottom: 15px; }
+        .btn-pron {
+            background: var(--purple); color: var(--white); border: none;
+            padding: 8px 15px; border-radius: 10px; cursor: pointer;
+            font-size: 1rem; font-weight: bold; margin-bottom: 10px;
         }
-        .tele-tag {
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            color: var(--gold-amber);
-            letter-spacing: 2px;
-            margin-bottom: 4px;
-        }
-        .tele-english {
-            font-size: 1.55rem;
-            font-weight: 700;
-            color: #ffffff;
-            line-height: 1.35;
-            margin-bottom: 8px;
-        }
-        .tele-phonetics-guide {
-            display: none;
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px dashed var(--gold-amber);
-            color: #fde68a;
-            font-family: var(--font-mono);
-            font-size: 1.15rem;
-            padding: 10px 14px;
-            border-radius: 6px;
-            margin-top: 8px;
-        }
-        .btn-phonetics-toggle {
-            background: rgba(255, 255, 255, 0.08);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            color: var(--text-primary);
-            font-family: var(--font-mono);
-            font-size: 0.75rem;
-            padding: 5px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-        }
-        .btn-phonetics-toggle:hover {
-            background: var(--gold-amber);
-            color: #000000;
-            border-color: var(--gold-amber);
+        .btn-pron:hover { background: #d05cff; }
+        .phonetics {
+            background: rgba(255, 255, 255, 0.1);
+            color: #FFEA00; font-family: monospace; font-size: 1.4rem;
+            padding: 15px; border-radius: 8px; display: none;
         }
 
-        /* Bottom Command Bar */
-        #hud-footer {
+        /* ================= NAVIGATION BAR ================= */
+        #navigation {
             position: fixed;
             bottom: 0; left: 0; right: 0;
-            height: 64px;
-            background: rgba(4, 9, 20, 0.98);
-            border-top: 1px solid var(--panel-border);
+            height: 80px;
+            background: rgba(7, 11, 20, 0.9);
+            border-top: 1px solid rgba(255,255,255,0.1);
             display: flex;
-            align-items: center;
             justify-content: space-between;
-            padding: 0 28px;
-            z-index: 60;
-            backdrop-filter: blur(10px);
+            align-items: center;
+            padding: 0 40px;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
         }
+        #navigation.show { opacity: 1; pointer-events: auto; }
+        
         .nav-btn {
-            background: rgba(0, 240, 255, 0.12);
-            border: 1px solid var(--cyan-neon);
-            color: #ffffff;
-            font-family: var(--font-ui);
-            font-size: 1rem;
-            font-weight: 700;
-            padding: 8px 20px;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            background: transparent; color: var(--white);
+            border: 2px solid var(--gray); border-radius: 10px;
+            padding: 10px 20px; font-size: 1.2rem; cursor: pointer;
+            transition: all 0.2s; font-weight: bold;
         }
-        .nav-btn:hover:not(:disabled) {
-            background: var(--cyan-neon);
-            color: var(--space-black);
-            box-shadow: 0 0 16px var(--cyan-neon);
-        }
-        .nav-btn:disabled {
-            opacity: 0.25;
-            cursor: not-allowed;
-            border-color: var(--text-secondary);
-        }
+        .nav-btn:hover { background: var(--cyan); border-color: var(--cyan); color: var(--bg-dark); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+        #slide-counter { font-size: 1.2rem; color: var(--gray); font-weight: bold; letter-spacing: 2px; }
 
-        .step-pills-row {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .nav-step-dot {
-            width: 32px;
-            height: 6px;
-            background: rgba(255, 255, 255, 0.2);
-            border-radius: 4px;
-            cursor: pointer;
-            transition: all 0.25s ease;
-        }
-        .nav-step-dot.active {
-            background: var(--cyan-neon);
-            width: 48px;
-            box-shadow: 0 0 10px var(--cyan-neon);
-        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
     </style>
 </head>
 <body>
 
-    <!-- Starfield & Engine Canvas -->
-    <canvas id="bg-canvas"></canvas>
-    <div class="scanline-grid"></div>
-    <div class="hud-vignette"></div>
+    <!-- Stars Background -->
+    <div id="stars-container"></div>
 
-    <!-- Telemetry Bar -->
-    <header id="telemetry-bar">
-        <div class="telem-group">
-            <span style="display:flex; align-items:center; gap:6px; color:var(--cyan-neon);">
-                <span class="status-dot"></span> NASA/ESA FLIGHT DIRECTORY
-            </span>
-            <span style="color:var(--text-secondary);">CRAFT: <strong style="color:#ffffff;">STAR WARRIOR MK-IV</strong></span>
-            <span style="color:var(--text-secondary);">PILOT: <strong style="color:var(--gold-amber);">DIEGO MATÍAS</strong></span>
+    <!-- Main Presentation Area -->
+    <div id="presentation-area">
+
+        <!-- ================= SLIDE 0: COVER ================= -->
+        <div class="slide active" id="slide-0">
+            <div style="text-align: center; animation: float 3s ease-in-out infinite;">
+                <div style="font-size: 6rem; margin-bottom: -20px;">🚀</div>
+                <h1>Star Warrior</h1>
+                <div class="subtitle">Spaceship Presentation</div>
+                
+                <div style="background: rgba(26, 34, 53, 0.8); border: 2px solid var(--purple); padding: 20px 40px; border-radius: 20px; display: inline-block; margin-top: 20px;">
+                    <p style="font-size: 1.5rem; color: var(--gray);">Mission Commander:</p>
+                    <p style="font-size: 2.5rem; font-weight: bold; color: var(--white);">Diego Matías</p>
+                    <p style="font-size: 1.2rem; color: var(--cyan); margin-top: 5px;">⭐ 4th Grade / Cambridge Level ⭐</p>
+                </div>
+            </div>
+            <button class="btn btn-start" onclick="changeSlide(1)">START MISSION ►</button>
         </div>
-        <div class="telem-group">
-            <span style="color:var(--text-secondary);">AP: <span style="color:var(--cyan-neon);">410 KM</span> | PE: <span style="color:var(--cyan-neon);">405 KM</span> | INC: 51.6°</span>
-            <button class="top-btn" id="btn-audio" onclick="toggleAudio()">🔊 AUDIO: ON</button>
-            <button class="top-btn" onclick="toggleFullscreen()">⛶ FULLSCREEN [F]</button>
+
+        <!-- ================= SLIDE 1: INSIDE ================= -->
+        <div class="slide" id="slide-1">
+            <h2>🛸 Inside the Spaceship</h2>
+            <p style="font-size: 1.5rem; color: var(--gray); margin-bottom: 30px;">Click the cards to explore the interior!</p>
+            
+            <div class="card-grid">
+                <div class="card" onclick="toggleCard(this)">
+                    <div class="emoji">🎮</div>
+                    <h3>Control Panel</h3>
+                    <div class="desc">"I fly the spaceship from here!"</div>
+                </div>
+                <div class="card" onclick="toggleCard(this)">
+                    <div class="emoji">💺</div>
+                    <h3>Space Seats</h3>
+                    <div class="desc">"Safe seats with strong seatbelts."</div>
+                </div>
+                <div class="card" onclick="toggleCard(this)">
+                    <div class="emoji">🛏️</div>
+                    <h3>Rest Area</h3>
+                    <div class="desc">"A cozy place to sleep in zero gravity."</div>
+                </div>
+                <div class="card" onclick="toggleCard(this)">
+                    <div class="emoji">🔬</div>
+                    <h3>Science Lab</h3>
+                    <div class="desc">"We do cool experiments here."</div>
+                </div>
+                <div class="card" onclick="toggleCard(this)">
+                    <div class="emoji">🫁</div>
+                    <h3>Life Support System</h3>
+                    <div class="desc">"Oxygen tanks give us fresh air to breathe."</div>
+                </div>
+            </div>
         </div>
-    </header>
 
-    <!-- Slide Stage Container -->
-    <main id="stage-viewport">
-
-        <!-- ================= SLIDE 0: LAUNCH HERO ================= -->
-        <section class="slide-frame active" id="slide-0">
-            <div class="launch-hero-card">
-                <div class="flight-id-strip">MISSION PROFILE: CAMBRIDGE ENGLISH 4TH GRADE</div>
-                <h1 class="ship-giant-name">STAR WARRIOR</h1>
-                <p style="font-size:1.35rem; color:var(--cyan-neon); letter-spacing:4px; text-transform:uppercase; font-weight:700;">
-                    Interplanetary Exploration Vehicle
-                </p>
-
-                <div class="pilot-credentials">
-                    <div class="pilot-title">COMMANDER & LEAD DESIGNER</div>
-                    <div class="pilot-name">Diego Matías</div>
-                    <div class="pilot-subtitle">★ Oral Presentation Defense ★</div>
-                </div>
-
-                <div>
-                    <button class="btn-ignite" onclick="launchSequence()">
-                        ENGAGE SYSTEMS ►
-                    </button>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= SLIDE 1: REALISTIC INTERIOR CUTAWAYS ================= -->
-        <section class="slide-frame" id="slide-1">
-            <div class="stage-title-wrap">
-                <div class="badge-sector">// SECTION 01: INTERNAL HABITAT & AVIONICS</div>
-                <h2 class="main-heading">Inside the Spaceship</h2>
-                <div class="sub-heading">Engineering cutaways of life support, avionics, crew quarters, and research modules</div>
-            </div>
-
-            <div class="interior-layout">
-                <!-- Selector List -->
-                <div class="interior-module-list">
-                    <div class="module-tab-card active-tab" onclick="selectInteriorModule(0, this)">
-                        <div class="module-icon-hex">🎛️</div>
-                        <div>
-                            <div class="module-meta-name">1. Control Panel</div>
-                            <div class="module-meta-sub">TRIPLE GLASS COCKPIT MFD & FLY-BY-WIRE</div>
-                        </div>
-                    </div>
-
-                    <div class="module-tab-card" onclick="selectInteriorModule(1, this)">
-                        <div class="module-icon-hex">💺</div>
-                        <div>
-                            <div class="module-meta-name">2. Space Seats</div>
-                            <div class="module-meta-sub">CUSTOM CARBON FIBER LAUNCH COUCHES</div>
-                        </div>
-                    </div>
-
-                    <div class="module-tab-card" onclick="selectInteriorModule(2, this)">
-                        <div class="module-icon-hex">🛏️</div>
-                        <div>
-                            <div class="module-meta-name">3. Rest Area</div>
-                            <div class="module-meta-sub">ACOUSTIC ZERO-G SLEEP BERTHS</div>
-                        </div>
-                    </div>
-
-                    <div class="module-tab-card" onclick="selectInteriorModule(3, this)">
-                        <div class="module-icon-hex">🔬</div>
-                        <div>
-                            <div class="module-meta-name">4. Science Lab</div>
-                            <div class="module-meta-sub">CENTRIFUGE & MICROGRAVITY GLOVEBOX</div>
-                        </div>
-                    </div>
-
-                    <div class="module-tab-card" onclick="selectInteriorModule(4, this)">
-                        <div class="module-icon-hex">🫁</div>
-                        <div>
-                            <div class="module-meta-name">5. Life Support System</div>
-                            <div class="module-meta-sub">DUAL CRYO OXYGEN TANKS & CO2 SCRUBBERS</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Vector Rendering Display Window -->
-                <div class="interior-cutaway-display">
-                    <div class="cutaway-header-bar">
-                        <span id="int-cutaway-title">MODULE 01: COCKPIT AVIONICS</span>
-                        <span>STATUS: PRESSURIZED (101.3 kPa)</span>
-                    </div>
-
-                    <div class="cutaway-canvas-body">
-                        <!-- Dynamic SVG Schematic Container -->
-                        <svg id="interior-schematic-svg" viewBox="0 0 600 340" style="width:100%; height:100%;">
-                            <!-- Procedural SVG Content will be injected by script -->
-                        </svg>
-                    </div>
-
-                    <div class="cutaway-desc-bar">
-                        <div class="speech-quote-text" id="int-speech-quote">"Inside, it has a control panel..."</div>
-                        <div class="realism-specs-text" id="int-specs-breakdown">
-                            Avionics Architecture: Triple multi-function touchscreens displaying pitch ladder, orbital trajectory vectors, and automated RCS thruster response.
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- ================= SLIDE 2: REALISTIC EXTERIOR BLUEPRINT ================= -->
-        <section class="slide-frame" id="slide-2">
-            <div class="stage-title-wrap">
-                <div class="badge-sector">// SECTION 02: EXTERIOR AEROSPACE ARCHITECTURE</div>
-                <h2 class="main-heading">Outside the Spaceship</h2>
-                <div class="sub-heading">Hypersonic thermal protection, deployable photovoltaics, grid fins, and cryogenic engines</div>
-            </div>
-
-            <div class="exterior-layout">
-                <!-- Detailed Blueprint Viewport -->
-                <div class="blueprint-viewport">
-                    <div class="grid-blueprint-lines"></div>
-
-                    <svg viewBox="0 0 340 500" style="width:90%; height:94%; filter:drop-shadow(0 10px 25px rgba(0,0,0,0.8));">
-                        <defs>
-                            <!-- Metallic Shading Gradients -->
-                            <linearGradient id="metal-hull" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#475569" />
-                                <stop offset="25%" stop-color="#cbd5e1" />
-                                <stop offset="65%" stop-color="#94a3b8" />
-                                <stop offset="100%" stop-color="#1e293b" />
-                            </linearGradient>
-
-                            <linearGradient id="tps-tiles" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#18181b" />
-                                <stop offset="50%" stop-color="#27272a" />
-                                <stop offset="100%" stop-color="#09090b" />
-                            </linearGradient>
-
-                            <linearGradient id="solar-cell-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                <stop offset="0%" stop-color="#0284c7" />
-                                <stop offset="40%" stop-color="#0369a1" />
-                                <stop offset="100%" stop-color="#0c4a6e" />
-                            </linearGradient>
-
-                            <linearGradient id="bell-copper" x1="0%" y1="0%" x2="100%" y2="0%">
-                                <stop offset="0%" stop-color="#78350f" />
-                                <stop offset="50%" stop-color="#d97706" />
-                                <stop offset="100%" stop-color="#451a03" />
-                            </linearGradient>
-
-                            <pattern id="tps-grid" width="6" height="6" patternUnits="userSpaceOnUse">
-                                <rect width="6" height="6" fill="none" stroke="#3f3f46" stroke-width="0.5" />
-                            </pattern>
-                        </defs>
-
-                        <!-- Rocket Centerline Axis -->
-                        <line x1="170" y1="20" x2="170" y2="480" stroke="rgba(0, 240, 255, 0.25)" stroke-dasharray="4 4" />
-
-                        <!-- 1. SOLAR PANELS (Left & Right Deployable Wings) -->
-                        <g id="ext-svg-solar">
-                            <!-- Left Wing -->
-                            <rect x="15" y="210" width="85" height="110" rx="3" fill="url(#solar-cell-grad)" stroke="#38bdf8" stroke-width="1.5" />
-                            <!-- Solar Grid Ribs -->
-                            <line x1="15" y1="237" x2="100" y2="237" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="15" y1="265" x2="100" y2="265" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="15" y1="292" x2="100" y2="292" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="43" y1="210" x2="43" y2="320" stroke="#ffd700" stroke-width="0.75" opacity="0.8" />
-                            <line x1="72" y1="210" x2="72" y2="320" stroke="#ffd700" stroke-width="0.75" opacity="0.8" />
-                            <!-- Left Truss -->
-                            <line x1="100" y1="265" x2="125" y2="265" stroke="#94a3b8" stroke-width="4" />
-
-                            <!-- Right Wing -->
-                            <rect x="240" y="210" width="85" height="110" rx="3" fill="url(#solar-cell-grad)" stroke="#38bdf8" stroke-width="1.5" />
-                            <!-- Solar Grid Ribs -->
-                            <line x1="240" y1="237" x2="325" y2="237" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="240" y1="265" x2="325" y2="265" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="240" y1="292" x2="325" y2="292" stroke="#38bdf8" stroke-width="0.75" />
-                            <line x1="268" y1="210" x2="268" y2="320" stroke="#ffd700" stroke-width="0.75" opacity="0.8" />
-                            <line x1="297" y1="210" x2="297" y2="320" stroke="#ffd700" stroke-width="0.75" opacity="0.8" />
-                            <!-- Right Truss -->
-                            <line x1="215" y1="265" x2="240" y2="265" stroke="#94a3b8" stroke-width="4" />
+        <!-- ================= SLIDE 2: OUTSIDE (SVG ROCKET) ================= -->
+        <div class="slide" id="slide-2">
+            <h2 style="color: var(--cyan);">☄️ Outside the Spaceship</h2>
+            
+            <div class="rocket-container">
+                <!-- Interactive SVG Rocket -->
+                <div class="rocket-drawing">
+                    <svg viewBox="0 0 200 450" width="100%" height="100%">
+                        <!-- Flame -->
+                        <g class="flame-anim">
+                            <path d="M70,350 Q100,450 130,350 Q100,390 70,350" fill="#FF5722"/>
+                            <path d="M85,350 Q100,420 115,350 Q100,380 85,350" fill="#FFC107"/>
                         </g>
-
-                        <!-- 2. STABILIZER FINS / GRID FINS (Aerodynamic Titanium Flaps) -->
-                        <g id="ext-svg-fins">
-                            <!-- Left Titanium Fin with structural ribs -->
-                            <path d="M125,320 L75,410 L125,395 Z" fill="#64748b" stroke="#cbd5e1" stroke-width="1.5" />
-                            <line x1="110" y1="340" x2="88" y2="395" stroke="#334155" stroke-width="2" />
-
-                            <!-- Right Titanium Fin -->
-                            <path d="M215,320 L265,410 L215,395 Z" fill="#64748b" stroke="#cbd5e1" stroke-width="1.5" />
-                            <line x1="230" y1="340" x2="252" y2="395" stroke="#334155" stroke-width="2" />
-                        </g>
-
-                        <!-- 3. ROCKET BODY (Austenitic Stainless Steel + Cryogenic Weld Rings) -->
-                        <g id="ext-svg-fuselage">
-                            <path d="M125,140 L125,415 L215,415 L215,140 Z" fill="url(#metal-hull)" stroke="#64748b" stroke-width="1.5" />
-                            <!-- Cryogenic Weld Seams -->
-                            <line x1="125" y1="190" x2="215" y2="190" stroke="#334155" stroke-width="1.5" />
-                            <line x1="125" y1="250" x2="215" y2="250" stroke="#334155" stroke-width="1.5" />
-                            <line x1="125" y1="330" x2="215" y2="330" stroke="#334155" stroke-width="1.5" />
-                            <line x1="125" y1="380" x2="215" y2="380" stroke="#334155" stroke-width="1.5" />
-                            <!-- Forward RCS Attitude Control Pods -->
-                            <circle cx="127" cy="155" r="3" fill="#000" stroke="#00f0ff" stroke-width="1" />
-                            <circle cx="213" cy="155" r="3" fill="#000" stroke="#00f0ff" stroke-width="1" />
-                        </g>
-
-                        <!-- 4. NOSE CONE (Ceramic TPS Heat Shield + Mach Ogive Profile) -->
-                        <g id="ext-svg-nose">
-                            <path d="M125,140 C125,65 170,30 170,30 C170,30 215,65 215,140 Z" fill="url(#tps-tiles)" stroke="#f59e0b" stroke-width="1.5" />
-                            <path d="M125,140 C125,65 170,30 170,30 C170,30 215,65 215,140 Z" fill="url(#tps-grid)" opacity="0.6" />
-                            <!-- Aerodynamic Reentry Nosecap Tip -->
-                            <path d="M162,45 C162,38 170,30 170,30 C170,30 178,38 178,45 Z" fill="#ef4444" />
-                            <!-- Docking Mechanism Ring -->
-                            <ellipse cx="170" cy="30" rx="6" ry="2" fill="#94a3b8" stroke="#f8fafc" stroke-width="1" />
-                        </g>
-
-                        <!-- 5. OBSERVATION WINDOWS (Cupola Multi-Pane Fused Silica) -->
-                        <g id="ext-svg-window">
-                            <!-- Circular Central Observation Dome -->
-                            <circle cx="170" cy="155" r="22" fill="#030712" stroke="#64748b" stroke-width="4" />
-                            <circle cx="170" cy="155" r="19" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" opacity="0.85" />
-                            <!-- Triple Glass Pane Bezel Screws -->
-                            <circle cx="170" cy="135" r="1.5" fill="#f8fafc" />
-                            <circle cx="190" cy="155" r="1.5" fill="#f8fafc" />
-                            <circle cx="170" cy="175" r="1.5" fill="#f8fafc" />
-                            <circle cx="150" cy="155" r="1.5" fill="#f8fafc" />
-                            <!-- Specular Sunlight Glare on Quartz -->
-                            <path d="M158,144 Q170,138 182,144" stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.8" />
-                        </g>
-
-                        <!-- 6. POWERFUL THRUSTERS (Gimbaled Staged Combustion Bells) -->
-                        <g id="ext-svg-thrusters">
-                            <!-- Left Engine Bell -->
-                            <path d="M142,415 L132,450 L158,450 L150,415 Z" fill="url(#bell-copper)" stroke="#f59e0b" stroke-width="1" />
-                            <!-- Center Engine Bell (Slightly larger vacuum nozzle) -->
-                            <path d="M162,415 L150,458 L190,458 L178,415 Z" fill="url(#bell-copper)" stroke="#f59e0b" stroke-width="1.5" />
-                            <!-- Right Engine Bell -->
-                            <path d="M190,415 L182,450 L208,450 L198,415 Z" fill="url(#bell-copper)" stroke="#f59e0b" stroke-width="1" />
-                            <!-- Cryogenic Turbopump Manifold -->
-                            <rect x="135" y="410" width="70" height="6" rx="2" fill="#334155" />
-
-                            <!-- Dynamic Plasma Exhaust Thrust -->
-                            <g id="flame-plumes">
-                                <path d="M152,458 Q170,510 188,458 Q170,480 152,458" fill="#38bdf8" opacity="0.9" />
-                                <path d="M160,458 Q170,495 180,458 Z" fill="#ffffff" />
-                            </g>
-                        </g>
-
-                        <!-- Hotspots on Blueprint with Interactive Callouts -->
-                        <g class="hotspot-node active-node" id="node-nose" onclick="inspectExteriorPart(0)">
-                            <circle class="halo" cx="170" cy="80" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
-                            <circle class="core" cx="170" cy="80" r="7" fill="#00f0ff" />
-                            <text x="170" y="83" font-size="8" fill="#000" font-weight="900" text-anchor="middle">1</text>
-                        </g>
-
-                        <g class="hotspot-node" id="node-thrusters" onclick="inspectExteriorPart(1)">
-                            <circle class="halo" cx="170" cy="436" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
-                            <circle class="core" cx="170" cy="436" r="7" fill="#00f0ff" />
-                            <text x="170" y="439" font-size="8" fill="#000" font-weight="900" text-anchor="middle">2</text>
-                        </g>
-
-                        <g class="hotspot-node" id="node-fins" onclick="inspectExteriorPart(2)">
-                            <circle class="halo" cx="242" cy="370" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
-                            <circle class="core" cx="242" cy="370" r="7" fill="#00f0ff" />
-                            <text x="242" y="373" font-size="8" fill="#000" font-weight="900" text-anchor="middle">3</text>
-                        </g>
-
-                        <g class="hotspot-node" id="node-windows" onclick="inspectExteriorPart(3)">
-                            <circle class="halo" cx="170" cy="155" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
-                            <circle class="core" cx="170" cy="155" r="7" fill="#00f0ff" />
-                            <text x="170" y="158" font-size="8" fill="#000" font-weight="900" text-anchor="middle">4</text>
-                        </g>
-
-                        <g class="hotspot-node" id="node-solar" onclick="inspectExteriorPart(4)">
-                            <circle class="halo" cx="60" cy="265" r="14" fill="none" stroke="#00f0ff" stroke-width="1.5" stroke-dasharray="3 3" />
-                            <circle class="core" cx="60" cy="265" r="7" fill="#00f0ff" />
-                            <text x="60" y="268" font-size="8" fill="#000" font-weight="900" text-anchor="middle">5</text>
-                        </g>
+                        <!-- Solar Panel Left -->
+                        <rect x="0" y="200" width="45" height="70" rx="5" fill="#162032" stroke="#00F0FF" stroke-width="3"/>
+                        <line x1="15" y1="200" x2="15" y2="270" stroke="#00F0FF" stroke-width="1"/>
+                        <line x1="30" y1="200" x2="30" y2="270" stroke="#00F0FF" stroke-width="1"/>
+                        <!-- Solar Panel Right -->
+                        <rect x="155" y="200" width="45" height="70" rx="5" fill="#162032" stroke="#00F0FF" stroke-width="3"/>
+                        <line x1="170" y1="200" x2="170" y2="270" stroke="#00F0FF" stroke-width="1"/>
+                        <line x1="185" y1="200" x2="185" y2="270" stroke="#00F0FF" stroke-width="1"/>
+                        
+                        <!-- Fins -->
+                        <path d="M45,250 L10,350 L45,320 Z" fill="#B026FF"/>
+                        <path d="M155,250 L190,350 L155,320 Z" fill="#B026FF"/>
+                        
+                        <!-- Main Body -->
+                        <path d="M45,150 C45,60 100,20 100,20 C100,20 155,60 155,150 L155,350 L45,350 Z" fill="#E2E8F0"/>
+                        <!-- Nose Cone -->
+                        <path d="M45,150 C45,60 100,20 100,20 C100,20 155,60 155,150 C100,120 45,150 45,150 Z" fill="#FF5722"/>
+                        
+                        <!-- Window -->
+                        <circle cx="100" cy="200" r="30" fill="#070B14" stroke="#8A9BB4" stroke-width="6"/>
+                        <circle cx="100" cy="200" r="27" fill="none" stroke="#00F0FF" stroke-width="2"/>
+                        <path d="M85,185 Q95,175 110,185" stroke="#FFFFFF" stroke-width="3" fill="none" stroke-linecap="round" opacity="0.5"/>
+                        
+                        <!-- Thrusters -->
+                        <rect x="70" y="350" width="60" height="20" rx="5" fill="#4A5568"/>
                     </svg>
+
+                    <!-- HOTSPOTS (Positioned over SVG) -->
+                    <div class="hotspot" style="top: 15%; left: 50%; transform: translate(-50%, -50%);" 
+                         onclick="updateRocketInfo('Aerodynamic Nose Cone', 'The pointy top cuts through the space air so we fly faster!', '🔺')">+</div>
+                    
+                    <div class="hotspot" style="top: 44%; left: 50%; transform: translate(-50%, -50%); background: var(--purple); border-color: var(--white);" 
+                         onclick="updateRocketInfo('Observation Windows', 'To look at the beautiful stars, moons and planets.', '🪟')">+</div>
+                    
+                    <div class="hotspot" style="top: 52%; left: -5%;" 
+                         onclick="updateRocketInfo('Solar Panels', 'They catch sunlight to make electricity for the spaceship.', '☀️')">+</div>
+                    
+                    <div class="hotspot" style="top: 75%; left: 90%;" 
+                         onclick="updateRocketInfo('Stabilizer Fins', 'They keep the spaceship straight and steady during flight.', '🦈')">+</div>
+                    
+                    <div class="hotspot" style="top: 85%; left: 50%; transform: translate(-50%, -50%); background: var(--orange);" 
+                         onclick="updateRocketInfo('Powerful Thrusters', 'Fire and power to go super fast into the galaxy!', '🚀')">+</div>
                 </div>
 
-                <!-- Technical Specification Dashboard Panel -->
-                <div class="exterior-hud-panel">
-                    <!-- Quick Pill Navigation -->
-                    <div class="part-nav-pills">
-                        <button class="pill-btn active-pill" onclick="inspectExteriorPart(0)">1. Nose Cone</button>
-                        <button class="pill-btn" onclick="inspectExteriorPart(1)">2. Thrusters</button>
-                        <button class="pill-btn" onclick="inspectExteriorPart(2)">3. Fins</button>
-                        <button class="pill-btn" onclick="inspectExteriorPart(3)">4. Windows</button>
-                        <button class="pill-btn" onclick="inspectExteriorPart(4)">5. Solar Panels</button>
-                    </div>
-
-                    <div class="ext-inspect-content">
-                        <div style="font-family:var(--font-mono); font-size:0.8rem; color:var(--gold-amber); letter-spacing:2px; margin-bottom:4px;">
-                            SYSTEM SCHEMATIC ID: <span id="ext-part-code">HULL-01</span>
-                        </div>
-                        <h3 class="ext-part-title" id="ext-part-title">Aerodynamic Nose Cone</h3>
-                        <div class="ext-speech-callout" id="ext-speech-quote">
-                            "Outside, it has an aerodynamic nose cone..."
-                        </div>
-                        <p class="ext-engineering-breakdown" id="ext-part-desc">
-                            Forged with Toughened Uni-piece Fibrous Reinforced Oxidation-Resistant Composite (TUFROC) ceramic tiles, allowing Star Warrior to pierce planetary atmospheres at Mach 25 without structural degradation.
-                        </p>
-
-                        <div class="telem-specs-grid">
-                            <div class="spec-tile">
-                                <div class="spec-label">THERMAL RESISTANCE</div>
-                                <div class="spec-val" id="ext-spec-1">2,850 °C</div>
-                            </div>
-                            <div class="spec-tile">
-                                <div class="spec-label">AERODYNAMIC PROFILE</div>
-                                <div class="spec-val" id="ext-spec-2">VON KÁRMÁN OGIVE</div>
-                            </div>
-                            <div class="spec-tile">
-                                <div class="spec-label">AVIONICS INTEGRATION</div>
-                                <div class="spec-val" id="ext-spec-3">ACTIVE RADOME</div>
-                            </div>
-                        </div>
-                    </div>
+                <!-- Info Panel -->
+                <div class="rocket-info" id="rocket-info-box">
+                    <div style="font-size: 4rem; text-align: center; margin-bottom: 10px;">👈</div>
+                    <h3 style="text-align: center; color: var(--gray);">Click the glowing dots!</h3>
+                    <p style="text-align: center; color: var(--gray);">Learn about the parts of the Star Warrior.</p>
                 </div>
             </div>
-        </section>
+        </div>
 
         <!-- ================= SLIDE 3: MISSIONS ================= -->
-        <section class="slide-frame" id="slide-3">
-            <div class="stage-title-wrap">
-                <div class="badge-sector">// SECTION 03: FLIGHT PROFILES & DIRECTIVES</div>
-                <h2 class="main-heading">Main Missions</h2>
-                <div class="sub-heading">Three core orbital mission scenarios executed by Star Warrior</div>
-            </div>
-
-            <div class="missions-grid">
-                <!-- Mission 1: Orbit Earth -->
-                <div class="mission-objective-card selected-mission" onclick="selectMission(0, this)">
-                    <svg class="mission-svg-radar" viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(0, 240, 255, 0.2)" stroke-dasharray="4 4" />
-                        <!-- Realistic Earth Vector -->
-                        <circle cx="60" cy="60" r="30" fill="#0284c7" stroke="#38bdf8" stroke-width="1.5" />
-                        <path d="M48,50 Q56,40 68,48 Q64,62 50,60 Z" fill="#10b981" opacity="0.9" />
-                        <path d="M58,68 Q72,66 75,76 Q65,82 58,78 Z" fill="#10b981" opacity="0.9" />
-                        <!-- Spacecraft in Elliptical Orbit -->
-                        <ellipse cx="60" cy="60" rx="52" ry="24" fill="none" stroke="#00f0ff" stroke-width="1.5" transform="rotate(-25 60 60)" />
-                        <circle cx="95" cy="44" r="4" fill="#f59e0b" />
-                    </svg>
-                    <div class="mission-id-tag">MISSION PROFILE 01</div>
-                    <h3 class="mission-name">Orbit Around the Earth</h3>
-                    <div class="mission-speech-text">
-                        "Navigate and orbit around the Earth."
-                    </div>
-                    <div class="mission-tech-spec">
-                        LOW EARTH ORBIT (LEO) • ALT: 410 KM • VELOCITY: 27,600 KM/H
-                    </div>
+        <div class="slide" id="slide-3">
+            <h2 style="color: #FFD700;">⭐ Main Missions</h2>
+            <p style="font-size: 1.5rem; color: var(--gray); margin-bottom: 30px;">What does the Star Warrior do?</p>
+            
+            <div class="card-grid" style="gap: 40px;">
+                <div class="card" onclick="toggleCard(this)" style="width: 300px; border-color: #4CAF50;">
+                    <div class="emoji">🌍</div>
+                    <h3 style="color: #4CAF50;">1. Orbiting the Earth</h3>
+                    <div class="desc" style="color: white;">"Flying around our beautiful blue planet to take pictures."</div>
                 </div>
-
-                <!-- Mission 2: Satellites -->
-                <div class="mission-objective-card" onclick="selectMission(1, this)">
-                    <svg class="mission-svg-radar" viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(0, 240, 255, 0.2)" stroke-dasharray="4 4" />
-                        <!-- Satellite Model -->
-                        <rect x="52" y="50" width="16" height="20" rx="2" fill="#cbd5e1" stroke="#f8fafc" stroke-width="1" />
-                        <!-- Solar wings -->
-                        <rect x="22" y="52" width="26" height="16" rx="2" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
-                        <rect x="72" y="52" width="26" height="16" rx="2" fill="#0284c7" stroke="#38bdf8" stroke-width="1" />
-                        <!-- Robotic Service Arm -->
-                        <path d="M60,70 L60,86 L78,92" fill="none" stroke="#f59e0b" stroke-width="2.5" stroke-linecap="round" />
-                        <circle cx="78" cy="92" r="3" fill="#ef4444" />
-                    </svg>
-                    <div class="mission-id-tag">MISSION PROFILE 02</div>
-                    <h3 class="mission-name">Launch & Repair Satellites</h3>
-                    <div class="mission-speech-text">
-                        "Launch and repair satellites."
-                    </div>
-                    <div class="mission-tech-spec">
-                        PAYLOAD BAY DEPLOYMENT • ROBOTIC EVA TELEMETRY MAINTENANCE
-                    </div>
+                
+                <div class="card" onclick="toggleCard(this)" style="width: 300px; border-color: var(--cyan);">
+                    <div class="emoji">🛰️</div>
+                    <h3 style="color: var(--cyan);">2. Launching Satellites</h3>
+                    <div class="desc" style="color: white;">"Putting new machines in space for TV and Internet."</div>
                 </div>
-
-                <!-- Mission 3: Visit Planets -->
-                <div class="mission-objective-card" onclick="selectMission(2, this)">
-                    <svg class="mission-svg-radar" viewBox="0 0 120 120">
-                        <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(0, 240, 255, 0.2)" stroke-dasharray="4 4" />
-                        <!-- Mars / Interplanetary Vector -->
-                        <circle cx="60" cy="60" r="28" fill="#c2410c" stroke="#ea580c" stroke-width="1.5" />
-                        <path d="M50,42 Q65,48 56,64 Q45,58 50,42 Z" fill="#9a3412" />
-                        <circle cx="60" cy="34" r="5" fill="#ffffff" opacity="0.8" /> <!-- Martian polar cap -->
-                        <!-- Hohmann Transfer Arc -->
-                        <path d="M15,95 Q55,20 105,35" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="4 3" />
-                        <polygon points="105,35 97,32 101,41" fill="#f59e0b" />
-                    </svg>
-                    <div class="mission-id-tag">MISSION PROFILE 03</div>
-                    <h3 class="mission-name">Visit Other Planets</h3>
-                    <div class="mission-speech-text">
-                        "Visit other planets."
-                    </div>
-                    <div class="mission-tech-spec">
-                        INTERPLANETARY TRANSFER • DEEP SPACE AERO-BRAKING & ENTRY
-                    </div>
+                
+                <div class="card" onclick="toggleCard(this)" style="width: 300px; border-color: var(--orange);">
+                    <div class="emoji">🪐</div>
+                    <h3 style="color: var(--orange);">3. Exploring Planets</h3>
+                    <div class="desc" style="color: white;">"Traveling to Mars and discovering new worlds!"</div>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- ================= SLIDE 4: TELEPROMPTER & REHEARSAL ================= -->
-        <section class="slide-frame" id="slide-4">
-            <div class="stage-title-wrap" style="margin-bottom:12px;">
-                <div class="badge-sector">// SECTION 04: SPEECH REHEARSAL CENTER</div>
-                <h2 class="main-heading" style="font-size:2rem;">Commander's Presentation Script</h2>
-                <div class="sub-heading">Practice each sentence with Cambridge Young Learners pronunciation cues</div>
-            </div>
-
-            <div class="teleprompter-shell">
-                <!-- Chunk 1: Intro -->
-                <div class="tele-box">
-                    <div class="tele-tag">SECTION 1 // INTRO</div>
-                    <p class="tele-english">"Hello, my name is Diego Matías and today I present my spaceship: Star Warrior."</p>
-                    <button class="btn-phonetics-toggle" onclick="toggleTeleGuide('phon-1')">👁️ Show Pronunciation Guide</button>
-                    <div class="tele-phonetics-guide" id="phon-1">
-                        / Je-lóu, mái néim is Diego Matías and tu-déi Ái pre-sént mái spéis-xip: Star Uór-i-or. /
-                    </div>
+        <!-- ================= SLIDE 4: SPEECH HELPER ================= -->
+        <div class="slide" id="slide-4">
+            <h2 style="color: var(--white);">🎤 My Speech Helper</h2>
+            
+            <div class="speech-container">
+                
+                <!-- Chunk 1: Introduction -->
+                <div class="speech-box">
+                    <p class="english">"Hello everyone! My name is Diego Matías and today I want to present my spaceship: Star Warrior."</p>
+                    <button class="btn-pron" onclick="togglePronunciation('pron-1')">👁️ Show Pronunciation Guide</button>
+                    <div id="pron-1" class="phonetics">/ Je-lóu éb-ri-uan! Mái néim is Diego Matías and tu-déi Ái uónt tu pre-sént mái spéis-xip: Star Uór-i-or. /</div>
                 </div>
 
                 <!-- Chunk 2: Inside -->
-                <div class="tele-box">
-                    <div class="tele-tag">SECTION 2 // INTERIOR</div>
-                    <p class="tele-english">"Inside, it has a control panel, space seats, a rest area, a science lab, and a life support system with oxygen tanks."</p>
-                    <button class="btn-phonetics-toggle" onclick="toggleTeleGuide('phon-2')">👁️ Show Pronunciation Guide</button>
-                    <div class="tele-phonetics-guide" id="phon-2">
-                        / Ín-said, it jas a con-tróul pá-nel, spéis síits, a rest éi-ria, a sái-ens lab, and a láif su-pórt sís-tem uid ók-si-yen tanks. /
-                    </div>
+                <div class="speech-box">
+                    <p class="english">"Inside, it has a control panel, space seats, a rest area, a science lab, and a life support system with oxygen tanks."</p>
+                    <button class="btn-pron" onclick="togglePronunciation('pron-2')">👁️ Show Pronunciation Guide</button>
+                    <div id="pron-2" class="phonetics">/ Ín-said, it jas a con-tróul pá-nel, spéis síits, a rest éi-ria, a sái-ens lab, and a láif su-pórt sís-tem uid ók-si-yen tanks. /</div>
                 </div>
 
                 <!-- Chunk 3: Outside -->
-                <div class="tele-box">
-                    <div class="tele-tag">SECTION 3 // EXTERIOR</div>
-                    <p class="tele-english">"Outside, it has an aerodynamic nose cone, powerful thrusters, stabilizer fins, observation windows, and solar panels."</p>
-                    <button class="btn-phonetics-toggle" onclick="toggleTeleGuide('phon-3')">👁️ Show Pronunciation Guide</button>
-                    <div class="tele-phonetics-guide" id="phon-3">
-                        / Áut-said, it jas an e-ro-dai-ná-mic nóus cón, páu-er-ful zrás-ters, stei-bi-lái-zer fins, ob-ser-véi-shon uín-dous, and sóu-lar pá-nels. /
-                    </div>
+                <div class="speech-box">
+                    <p class="english">"Outside, it has an aerodynamic nose cone, powerful thrusters, stabilizer fins, observation windows, and solar panels."</p>
+                    <button class="btn-pron" onclick="togglePronunciation('pron-3')">👁️ Show Pronunciation Guide</button>
+                    <div id="pron-3" class="phonetics">/ Áut-said, it jas an e-ro-dai-ná-mic nóus cón, páu-er-ful zrás-ters, stei-bi-lái-zer fins, ob-ser-véi-shon uín-dous, and sóu-lar pá-nels. /</div>
                 </div>
 
                 <!-- Chunk 4: Missions -->
-                <div class="tele-box">
-                    <div class="tele-tag">SECTION 4 // MISSIONS</div>
-                    <p class="tele-english">"Its main missions are to navigate and orbit around the Earth, launch and repair satellites, and visit other planets."</p>
-                    <button class="btn-phonetics-toggle" onclick="toggleTeleGuide('phon-4')">👁️ Show Pronunciation Guide</button>
-                    <div class="tele-phonetics-guide" id="phon-4">
-                        / Its méin mí-shons ar tu ná-vi-gueit and ór-bit a-ráund di érz, lonch and ri-péar sá-te-laits, and ví-sit ó-der plá-nets. /
-                    </div>
+                <div class="speech-box">
+                    <p class="english">"Its main missions are to navigate and orbit around the Earth, launch and repair satellites, and visit other planets."</p>
+                    <button class="btn-pron" onclick="togglePronunciation('pron-4')">👁️ Show Pronunciation Guide</button>
+                    <div id="pron-4" class="phonetics">/ Its méin mí-shons ar tu ná-vi-gueit and ór-bit a-ráund di érz, lonch and ri-péar sá-te-laits, and ví-sit ó-der plá-nets. /</div>
                 </div>
 
                 <!-- Chunk 5: Closing -->
-                <div class="tele-box" style="border-left-color:var(--gold-amber); background:rgba(245, 158, 11, 0.08);">
-                    <div class="tele-tag">SECTION 5 // CLOSING</div>
-                    <p class="tele-english" style="color:var(--gold-amber); font-size:2rem;">"Thank you very much! Any questions?"</p>
-                    <button class="btn-phonetics-toggle" style="background:var(--gold-amber); color:#000;" onclick="toggleTeleGuide('phon-5')">👁️ Show Pronunciation Guide</button>
-                    <div class="tele-phonetics-guide" id="phon-5" style="border-color:var(--gold-amber);">
-                        / Zank iu vé-ri mach! É-ni kués-chons? /
-                    </div>
+                <div class="speech-box" style="border-left-color: var(--orange); text-align: center; background: rgba(255, 87, 34, 0.2);">
+                    <p class="english" style="font-size: 2.2rem; color: var(--orange);">"Thank you very much! Any questions?"</p>
+                    <button class="btn-pron" onclick="togglePronunciation('pron-5')" style="background: var(--orange);">👁️ Show Pronunciation</button>
+                    <div id="pron-5" class="phonetics">/ Zank iu vé-ri mach! É-ni kués-chons? /</div>
                 </div>
+
             </div>
-        </section>
-
-    </main>
-
-    <!-- Bottom HUD Navigation -->
-    <footer id="hud-footer">
-        <button class="nav-btn" id="btn-nav-prev" onclick="changeSlide(-1)">
-            ◄ PREVIOUS [←]
-        </button>
-
-        <div style="display:flex; flex-direction:column; align-items:center; gap:6px;">
-            <div class="step-pills-row">
-                <div class="nav-step-dot active" onclick="gotoSlide(0)"></div>
-                <div class="nav-step-dot" onclick="gotoSlide(1)"></div>
-                <div class="nav-step-dot" onclick="gotoSlide(2)"></div>
-                <div class="nav-step-dot" onclick="gotoSlide(3)"></div>
-                <div class="nav-step-dot" onclick="gotoSlide(4)"></div>
-            </div>
-            <span style="font-family:var(--font-mono); font-size:0.75rem; color:var(--cyan-neon);" id="hud-slide-status">
-                PHASE 1 OF 5 : MISSION LAUNCH
-            </span>
         </div>
 
-        <button class="nav-btn" id="btn-nav-next" onclick="changeSlide(1)">
-            NEXT PHASE ► [→ / Space]
-        </button>
-    </footer>
+    </div>
 
-    <!-- ================= JAVASCRIPT: LOGIC, AUDIO & SCHEMATICS ================= -->
+    <!-- Navigation Bar -->
+    <div id="navigation">
+        <button id="btn-prev" class="nav-btn" onclick="changeSlide(-1)">◄ Previous</button>
+        <div id="slide-counter">Slide 1 of 5</div>
+        <button id="btn-next" class="nav-btn" onclick="changeSlide(1)">Next ►</button>
+    </div>
+
+    <!-- ================= JAVASCRIPT LÓGICA ================= -->
     <script>
-        /* ================= 1. WEB AUDIO API SYNTHESIZER (100% OFFLINE) ================= */
-        let audioCtx = null;
-        let isAudioMuted = false;
+        // 1. Generar Estrellas Animadas del Fondo
+        const starsContainer = document.getElementById('stars-container');
+        const numStars = 100;
+        
+        for (let i = 0; i < numStars; i++) {
+            let star = document.createElement('div');
+            star.classList.add('star');
+            
+            // Random properties
+            let x = Math.random() * 100;
+            let y = Math.random() * 100;
+            let size = Math.random() * 3 + 1;
+            let duration = Math.random() * 3 + 2;
+            let delay = Math.random() * 3;
 
-        function getAudioContext() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                if (AudioContext) audioCtx = new AudioContext();
-            }
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-            return audioCtx;
+            star.style.left = `${x}vw`;
+            star.style.top = `${y}vh`;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.animation = `twinkle ${duration}s ${delay}s infinite alternate`;
+            
+            // Color variation
+            let colorRoll = Math.random();
+            if (colorRoll > 0.9) star.style.backgroundColor = '#00F0FF';
+            else if (colorRoll > 0.8) star.style.backgroundColor = '#FF5722';
+
+            starsContainer.appendChild(star);
         }
 
-        function playSciFiChime(type) {
-            if (isAudioMuted) return;
-            try {
-                const ctx = getAudioContext();
-                if (!ctx) return;
-                const now = ctx.currentTime;
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (type === 'beep') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(600, now);
-                    osc.frequency.exponentialRampToValueAtTime(1200, now + 0.08);
-                    gain.gain.setValueAtTime(0.12, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-                    osc.start(now);
-                    osc.stop(now + 0.08);
-                } else if (type === 'select') {
-                    osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(480, now);
-                    osc.frequency.setValueAtTime(720, now + 0.06);
-                    gain.gain.setValueAtTime(0.15, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
-                    osc.start(now);
-                    osc.stop(now + 0.16);
-                } else if (type === 'launch') {
-                    // Deep rocket combustion rumble
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(90, now);
-                    osc.frequency.exponentialRampToValueAtTime(450, now + 0.6);
-                    gain.gain.setValueAtTime(0.25, now);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
-                    osc.start(now);
-                    osc.stop(now + 0.7);
-                }
-            } catch(e) {}
-        }
-
-        function toggleAudio() {
-            isAudioMuted = !isAudioMuted;
-            const btn = document.getElementById('btn-audio');
-            if (isAudioMuted) {
-                btn.innerText = '🔇 AUDIO: OFF';
-            } else {
-                btn.innerText = '🔊 AUDIO: ON';
-                playSciFiChime('select');
-            }
-        }
-
-        /* ================= 2. PROCEDURAL CANVAS SPACE BACKGROUND ================= */
-        const canvas = document.getElementById('bg-canvas');
-        const ctx = canvas.getContext('2d');
-        let width, height;
-        let stars = [];
-
-        function initCanvas() {
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
-            stars = [];
-            const count = Math.floor((width * height) / 4500);
-            for (let i = 0; i < count; i++) {
-                stars.push({
-                    x: Math.random() * width,
-                    y: Math.random() * height,
-                    r: Math.random() * 1.5 + 0.4,
-                    color: Math.random() > 0.8 ? '#38bdf8' : (Math.random() > 0.85 ? '#f59e0b' : '#ffffff'),
-                    alpha: Math.random(),
-                    speed: Math.random() * 0.015 + 0.005
-                });
-            }
-        }
-
-        function renderCanvas() {
-            ctx.clearRect(0, 0, width, height);
-
-            // Subtle Deep Space Nebula Glow
-            const nebula = ctx.createRadialGradient(width * 0.7, height * 0.4, 20, width * 0.7, height * 0.4, width * 0.5);
-            nebula.addColorStop(0, 'rgba(2, 132, 199, 0.08)');
-            nebula.addColorStop(1, 'transparent');
-            ctx.fillStyle = nebula;
-            ctx.fillRect(0, 0, width, height);
-
-            // Stars
-            for (let s of stars) {
-                s.alpha += s.speed;
-                if (s.alpha > 1 || s.alpha < 0.2) s.speed = -s.speed;
-                ctx.beginPath();
-                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
-                ctx.fillStyle = s.color;
-                ctx.globalAlpha = Math.max(0.1, Math.min(1, s.alpha));
-                ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
-            requestAnimationFrame(renderCanvas);
-        }
-
-        window.addEventListener('resize', initCanvas);
-        initCanvas();
-        renderCanvas();
-
-        /* ================= 3. PRESENTATION SLIDE SYSTEM ================= */
+        // 2. Sistema de Diapositivas
         let currentSlide = 0;
-        const totalSlides = 5;
-        const slideNames = [
-            "MISSION LAUNCH",
-            "INSIDE THE SPACESHIP",
-            "OUTSIDE THE SPACESHIP",
-            "MAIN MISSIONS",
-            "SPEECH REHEARSAL CENTER"
-        ];
+        const totalSlides = 5; // 0 to 4
+        const navBar = document.getElementById('navigation');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const slideCounter = document.getElementById('slide-counter');
 
-        function updateSlideUI() {
+        function updateUI() {
+            // Activar slide correspondiente
             for (let i = 0; i < totalSlides; i++) {
-                const el = document.getElementById(`slide-${i}`);
-                if (i === currentSlide) el.classList.add('active');
-                else el.classList.remove('active');
+                const slide = document.getElementById(`slide-${i}`);
+                if (i === currentSlide) {
+                    slide.classList.add('active');
+                } else {
+                    slide.classList.remove('active');
+                }
             }
 
-            // Dots
-            const dots = document.querySelectorAll('.nav-step-dot');
-            dots.forEach((d, idx) => {
-                if (idx === currentSlide) d.classList.add('active');
-                else d.classList.remove('active');
-            });
-
-            // Buttons
-            document.getElementById('btn-nav-prev').disabled = (currentSlide === 0);
-            const nextBtn = document.getElementById('btn-nav-next');
-            if (currentSlide === totalSlides - 1) {
-                nextBtn.innerHTML = `MISSION DEFENSE COMPLETE ✓`;
+            // Mostrar/Ocultar Navigation Bar
+            if (currentSlide === 0) {
+                navBar.classList.remove('show');
             } else {
-                nextBtn.innerHTML = `NEXT PHASE ► [→ / Space]`;
-            }
-
-            document.getElementById('hud-slide-status').innerText = `PHASE ${currentSlide + 1} OF ${totalSlides} : ${slideNames[currentSlide]}`;
-        }
-
-        function changeSlide(delta) {
-            const next = currentSlide + delta;
-            if (next >= 0 && next < totalSlides) {
-                currentSlide = next;
-                playSciFiChime('beep');
-                updateSlideUI();
+                navBar.classList.add('show');
+                slideCounter.innerText = `Slide ${currentSlide} of ${totalSlides - 1}`;
+                
+                // Deshabilitar botones en los extremos
+                btnPrev.disabled = (currentSlide === 1);
+                btnNext.disabled = (currentSlide === totalSlides - 1);
             }
         }
 
-        function gotoSlide(idx) {
-            if (idx >= 0 && idx < totalSlides) {
-                currentSlide = idx;
-                playSciFiChime('beep');
-                updateSlideUI();
+        function changeSlide(direction) {
+            let newSlide = currentSlide + direction;
+            if (newSlide >= 0 && newSlide < totalSlides) {
+                currentSlide = newSlide;
+                updateUI();
             }
         }
 
-        function launchSequence() {
-            playSciFiChime('launch');
-            changeSlide(1);
-        }
-
-        // Keyboard hotkeys
-        window.addEventListener('keydown', (e) => {
+        // Navegación con teclado
+        document.addEventListener('keydown', (e) => {
             if (e.key === 'ArrowRight' || e.key === ' ') {
-                if (currentSlide < totalSlides - 1) changeSlide(1);
+                if(currentSlide < totalSlides - 1) changeSlide(1);
             } else if (e.key === 'ArrowLeft') {
-                if (currentSlide > 0) changeSlide(-1);
-            } else if (e.key === 'f' || e.key === 'F') {
-                toggleFullscreen();
-            } else if (e.key === 'm' || e.key === 'M') {
-                toggleAudio();
+                if(currentSlide > 0) changeSlide(-1);
             }
         });
 
-        function toggleFullscreen() {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
+        // 3. Interactividad de Tarjetas (Slides 1 y 3)
+        function toggleCard(element) {
+            // Desactiva todas las demás en el mismo contenedor
+            let siblings = element.parentElement.children;
+            for(let card of siblings) {
+                if(card !== element) card.classList.remove('active-card');
             }
+            // Activa/desactiva la actual
+            element.classList.toggle('active-card');
         }
 
-        /* ================= 4. REALISTIC INTERIOR SCHEMATIC VECTOR GENERATOR ================= */
-        const interiorModulesData = [
-            {
-                title: "MODULE 01: GLASS COCKPIT AVIONICS",
-                quote: `"Inside, it has a control panel..."`,
-                specs: "Avionics Architecture: Triple primary flight displays (PFDs) rendering artificial horizons, orbital state vectors, Ap/Pe indicators, and dual digital fly-by-wire side-sticks.",
-                renderSvg: `
-                    <!-- Background Cockpit Instrument Bay -->
-                    <rect x="20" y="20" width="560" height="300" rx="14" fill="#091224" stroke="#1e3a8a" stroke-width="2" />
-                    <line x1="20" y1="240" x2="580" y2="240" stroke="#1e293b" stroke-width="2" />
-
-                    <!-- MFD Screen Left (Attitude & Trajectory) -->
-                    <rect x="50" y="45" width="140" height="150" rx="8" fill="#020617" stroke="#00f0ff" stroke-width="1.5" />
-                    <circle cx="120" cy="115" r="45" fill="none" stroke="#0284c7" stroke-width="1" />
-                    <line x1="80" y1="115" x2="160" y2="115" stroke="#10b981" stroke-width="2" />
-                    <text x="120" y="70" fill="#00f0ff" font-size="10" font-family="monospace" text-anchor="middle">PRIMARY FLIGHT</text>
-                    <text x="120" y="175" fill="#f59e0b" font-size="11" font-family="monospace" text-anchor="middle">AP: 410 KM | V: 7.8 KM/S</text>
-
-                    <!-- MFD Screen Center (Orbital Navigation) -->
-                    <rect x="230" y="45" width="140" height="150" rx="8" fill="#020617" stroke="#00f0ff" stroke-width="1.5" />
-                    <!-- Earth Curvature -->
-                    <ellipse cx="300" cy="180" rx="60" ry="25" fill="#0369a1" stroke="#38bdf8" stroke-width="1.5" />
-                    <!-- Orbital Path -->
-                    <path d="M245,140 Q300,90 355,110" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="3 3" />
-                    <polygon points="355,110 348,106 350,115" fill="#f59e0b" />
-                    <text x="300" y="70" fill="#00f0ff" font-size="10" font-family="monospace" text-anchor="middle">ORBITAL TRAJECTORY</text>
-
-                    <!-- MFD Screen Right (Life Support & Systems Checklist) -->
-                    <rect x="410" y="45" width="140" height="150" rx="8" fill="#020617" stroke="#00f0ff" stroke-width="1.5" />
-                    <text x="425" y="72" fill="#10b981" font-size="10" font-family="monospace">O2 TANK 1: 99.4%</text>
-                    <text x="425" y="92" fill="#10b981" font-size="10" font-family="monospace">CABIN: 101.3 kPa</text>
-                    <text x="425" y="112" fill="#10b981" font-size="10" font-family="monospace">RADAR: ACTIVE</text>
-                    <text x="425" y="132" fill="#38bdf8" font-size="10" font-family="monospace">THRUST: ARMED</text>
-                    <text x="425" y="152" fill="#f59e0b" font-size="10" font-family="monospace">RCS: AUTO-LINK</text>
-
-                    <!-- Flight Control Desk & Dual Side Sticks -->
-                    <rect x="100" y="220" width="400" height="40" rx="4" fill="#1e293b" stroke="#334155" stroke-width="1" />
-                    <!-- Fly-by-wire Joystick Left -->
-                    <path d="M160,240 L160,205" stroke="#94a3b8" stroke-width="6" stroke-linecap="round" />
-                    <circle cx="160" cy="200" r="9" fill="#00f0ff" stroke="#ffffff" stroke-width="1.5" />
-                    <!-- Throttle Quadrant Center -->
-                    <rect x="280" y="215" width="40" height="20" rx="3" fill="#0f172a" />
-                    <line x1="292" y1="215" x2="292" y2="200" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" />
-                    <line x1="308" y1="215" x2="308" y2="195" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" />
-                `
-            },
-            {
-                title: "MODULE 02: ERGONOMIC SPACE SEATS",
-                quote: `"Inside, it has space seats..."`,
-                specs: "Crew Seating: Molded high-G carbon-composite couches fitted with 5-point titanium restraint harnesses and biomedical umbilical connectors.",
-                renderSvg: `
-                    <rect x="20" y="20" width="560" height="300" rx="14" fill="#091224" stroke="#1e3a8a" stroke-width="2" />
-                    <!-- Seat Couches (Commander Diego & Pilot) -->
-                    <g transform="translate(130, 40)">
-                        <!-- Headrest -->
-                        <rect x="35" y="10" width="50" height="40" rx="10" fill="#334155" stroke="#00f0ff" stroke-width="1.5" />
-                        <!-- High-G Torso Shell -->
-                        <path d="M20,55 L100,55 L85,170 L35,170 Z" fill="#1e293b" stroke="#00f0ff" stroke-width="1.5" />
-                        <!-- 5-Point Harness Straps -->
-                        <line x1="35" y1="55" x2="60" y2="110" stroke="#f59e0b" stroke-width="4" />
-                        <line x1="85" y1="55" x2="60" y2="110" stroke="#f59e0b" stroke-width="4" />
-                        <circle cx="60" cy="110" r="8" fill="#ef4444" stroke="#f8fafc" stroke-width="1.5" />
-                        <!-- Leg Support -->
-                        <path d="M35,170 L25,230 L95,230 L85,170 Z" fill="#334155" stroke="#475569" stroke-width="1.5" />
-                        <text x="60" y="255" fill="#00f0ff" font-family="monospace" font-size="11" text-anchor="middle">COMMANDER SEAT</text>
-                    </g>
-
-                    <g transform="translate(350, 40)">
-                        <!-- Copilot Headrest -->
-                        <rect x="35" y="10" width="50" height="40" rx="10" fill="#334155" stroke="#94a3b8" stroke-width="1.5" />
-                        <!-- High-G Torso Shell -->
-                        <path d="M20,55 L100,55 L85,170 L35,170 Z" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
-                        <!-- 5-Point Harness -->
-                        <line x1="35" y1="55" x2="60" y2="110" stroke="#f59e0b" stroke-width="4" />
-                        <line x1="85" y1="55" x2="60" y2="110" stroke="#f59e0b" stroke-width="4" />
-                        <circle cx="60" cy="110" r="8" fill="#ef4444" stroke="#f8fafc" stroke-width="1.5" />
-                        <!-- Leg Support -->
-                        <path d="M35,170 L25,230 L95,230 L85,170 Z" fill="#334155" stroke="#475569" stroke-width="1.5" />
-                        <text x="60" y="255" fill="#94a3b8" font-family="monospace" font-size="11" text-anchor="middle">PILOT SEAT</text>
-                    </g>
-                `
-            },
-            {
-                title: "MODULE 03: ZERO-G CREW REST HABITAT",
-                quote: `"Inside, it has a rest area..."`,
-                specs: "Microgravity Sleep Quarters: Soundproof sleeping berths equipped with vertical sleep-sack tethers, independent airflow vents, and personal noise cancellation.",
-                renderSvg: `
-                    <rect x="20" y="20" width="560" height="300" rx="14" fill="#091224" stroke="#1e3a8a" stroke-width="2" />
-                    <!-- Bunk Chamber Frame -->
-                    <rect x="60" y="45" width="220" height="240" rx="10" fill="#0b172d" stroke="#38bdf8" stroke-width="1.5" />
-                    <!-- Sleeping Sack Tethered Vertically -->
-                    <rect x="110" y="70" width="120" height="180" rx="16" fill="#1e293b" stroke="#f59e0b" stroke-width="2" />
-                    <line x1="110" y1="120" x2="230" y2="120" stroke="#334155" stroke-width="2" />
-                    <line x1="110" y1="170" x2="230" y2="170" stroke="#334155" stroke-width="2" />
-                    <circle cx="170" cy="95" r="16" fill="#f8fafc" opacity="0.9" /> <!-- Crew pillow -->
-                    <!-- Securing Restraint Straps -->
-                    <line x1="80" y1="100" x2="110" y2="110" stroke="#ef4444" stroke-width="3" />
-                    <line x1="230" y1="110" x2="260" y2="100" stroke="#ef4444" stroke-width="3" />
-                    <line x1="80" y1="210" x2="110" y2="200" stroke="#ef4444" stroke-width="3" />
-                    <line x1="230" y1="200" x2="260" y2="210" stroke="#ef4444" stroke-width="3" />
-                    <text x="170" y="275" fill="#38bdf8" font-family="monospace" font-size="11" text-anchor="middle">ZERO-G SLEEP BERTH 01</text>
-
-                    <!-- Ventilation & Entertainment Screen Right -->
-                    <rect x="320" y="45" width="220" height="240" rx="10" fill="#0b172d" stroke="#1e293b" stroke-width="1.5" />
-                    <rect x="350" y="80" width="160" height="100" rx="6" fill="#020617" stroke="#00f0ff" stroke-width="1" />
-                    <text x="430" y="135" fill="#00f0ff" font-family="monospace" font-size="11" text-anchor="middle">CABIN ENVIRONMENT</text>
-                    <text x="430" y="155" fill="#10b981" font-family="monospace" font-size="10" text-anchor="middle">SOUNDPROOF: ACTIVE</text>
-                `
-            },
-            {
-                title: "MODULE 04: MICROGRAVITY SCIENCE LAB",
-                quote: `"Inside, it has a science lab..."`,
-                specs: "Research Facilities: Standardized scientific payload racks (ISPR) with a zero-gravity sealed glovebox, fluid physics experiment, and plant growth chambers.",
-                renderSvg: `
-                    <rect x="20" y="20" width="560" height="300" rx="14" fill="#091224" stroke="#1e3a8a" stroke-width="2" />
-                    <!-- Sealed Microgravity Glovebox Center -->
-                    <rect x="180" y="50" width="240" height="190" rx="12" fill="#020617" stroke="#00f0ff" stroke-width="2" />
-                    <!-- Glass Observation Pane -->
-                    <rect x="205" y="70" width="190" height="110" rx="6" fill="rgba(2, 132, 199, 0.15)" stroke="#38bdf8" stroke-width="1.5" />
-                    <!-- Sealed Rubber Handling Gloves -->
-                    <circle cx="260" cy="150" r="14" fill="#334155" stroke="#f59e0b" stroke-width="2" />
-                    <circle cx="340" cy="150" r="14" fill="#334155" stroke="#f59e0b" stroke-width="2" />
-                    <!-- Microgravity Plant Specimen Floating Inside -->
-                    <ellipse cx="300" cy="115" rx="12" ry="16" fill="#10b981" />
-                    <line x1="300" y1="130" x2="300" y2="100" stroke="#047857" stroke-width="2" />
-                    <text x="300" y="225" fill="#00f0ff" font-family="monospace" font-size="11" text-anchor="middle">HERMETIC GLOVEBOX CHAMBER</text>
-
-                    <!-- Scientific Specimen Rack Left -->
-                    <rect x="45" y="50" width="105" height="210" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1" />
-                    <rect x="55" y="65" width="85" height="35" fill="#0b172d" stroke="#10b981" stroke-width="1" />
-                    <text x="97" y="86" fill="#10b981" font-family="monospace" font-size="9" text-anchor="middle">CENTRIFUGE</text>
-                `
-            },
-            {
-                title: "MODULE 05: LIFE SUPPORT SYSTEM (ECLSS)",
-                quote: `"Inside, it has a life support system with oxygen tanks."`,
-                specs: "Environmental Control & Life Support: Dual cryogenic Liquid Oxygen (LOX) pressure vessels, titanium plumbing, carbon dioxide scrubbers, and automated cabin regulators.",
-                renderSvg: `
-                    <rect x="20" y="20" width="560" height="300" rx="14" fill="#091224" stroke="#1e3a8a" stroke-width="2" />
-                    <!-- Oxygen Tank 1 (Cryogenic Cylindrical Tank) -->
-                    <g transform="translate(110, 45)">
-                        <rect x="0" y="20" width="110" height="190" rx="35" fill="#0284c7" stroke="#38bdf8" stroke-width="2" />
-                        <text x="55" y="105" fill="#ffffff" font-family="monospace" font-size="20" font-weight="bold" text-anchor="middle">O₂</text>
-                        <text x="55" y="130" fill="#bae6fd" font-family="monospace" font-size="10" text-anchor="middle">LOX CYLINDER 1</text>
-                        <text x="55" y="150" fill="#10b981" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">300 BAR</text>
-                    </g>
-
-                    <!-- Oxygen Tank 2 (Secondary Redundant Vessel) -->
-                    <g transform="translate(260, 45)">
-                        <rect x="0" y="20" width="110" height="190" rx="35" fill="#0284c7" stroke="#38bdf8" stroke-width="2" />
-                        <text x="55" y="105" fill="#ffffff" font-family="monospace" font-size="20" font-weight="bold" text-anchor="middle">O₂</text>
-                        <text x="55" y="130" fill="#bae6fd" font-family="monospace" font-size="10" text-anchor="middle">LOX CYLINDER 2</text>
-                        <text x="55" y="150" fill="#10b981" font-family="monospace" font-size="12" font-weight="bold" text-anchor="middle">300 BAR</text>
-                    </g>
-
-                    <!-- Titanium Interconnecting High-Pressure Plumbing -->
-                    <path d="M165,45 L165,30 L315,30 L315,45" fill="none" stroke="#f59e0b" stroke-width="6" />
-                    <line x1="240" y1="30" x2="240" y2="80" stroke="#f59e0b" stroke-width="6" />
-
-                    <!-- Pressure Regulator Gauge -->
-                    <circle cx="240" cy="115" r="30" fill="#020617" stroke="#00f0ff" stroke-width="2" />
-                    <line x1="240" y1="115" x2="255" y2="102" stroke="#ef4444" stroke-width="3" stroke-linecap="round" />
-                    <text x="240" y="165" fill="#00f0ff" font-family="monospace" font-size="11" text-anchor="middle">CABIN REGULATOR</text>
-                    <text x="240" y="180" fill="#10b981" font-family="monospace" font-size="11" font-weight="bold" text-anchor="middle">101.3 kPa</text>
-                `
-            }
-        ];
-
-        function selectInteriorModule(index, element) {
-            playSciFiChime('select');
-            const tabs = document.querySelectorAll('.module-tab-card');
-            tabs.forEach(t => t.classList.remove('active-tab'));
-            if (element) element.classList.add('active-tab');
-
-            const data = interiorModulesData[index];
-            document.getElementById('int-cutaway-title').innerText = data.title;
-            document.getElementById('int-speech-quote').innerText = data.quote;
-            document.getElementById('int-specs-breakdown').innerText = data.specs;
-            document.getElementById('interior-schematic-svg').innerHTML = data.renderSvg;
+        // 4. Interactividad del Cohete (Slide 2)
+        function updateRocketInfo(title, desc, emoji) {
+            const infoBox = document.getElementById('rocket-info-box');
+            
+            // Animación de parpadeo suave
+            infoBox.style.opacity = '0';
+            setTimeout(() => {
+                infoBox.innerHTML = `
+                    <div style="font-size: 3.5rem; margin-bottom: 10px;">${emoji}</div>
+                    <h3>${title}</h3>
+                    <p>${desc}</p>
+                `;
+                infoBox.style.opacity = '1';
+                infoBox.style.transition = 'opacity 0.3s ease';
+            }, 150);
         }
 
-        // Initialize Module 0
-        selectInteriorModule(0, document.querySelector('.module-tab-card'));
-
-        /* ================= 5. REALISTIC EXTERIOR BLUEPRINT INSPECTOR ================= */
-        const exteriorPartsDB = [
-            {
-                code: "NOSE-CONE // TPS-01",
-                name: "Aerodynamic Nose Cone",
-                quote: `"Outside, it has an aerodynamic nose cone..."`,
-                desc: "Forged with hexagonal ceramic Thermal Protection System (TPS) tiles over a Von Kármán profile. Shields Star Warrior from 2,850 °C plasma friction during atmospheric entry.",
-                spec1: "2,850 °C",
-                spec2: "VON KÁRMÁN OGIVE",
-                spec3: "MACH 25 ENTRY",
-                nodeId: "node-nose"
-            },
-            {
-                code: "PROPULSION // STG-COMB",
-                name: "Powerful Thrusters",
-                quote: `"Outside, it has powerful thrusters..."`,
-                desc: "Triple staged combustion rocket engines utilizing methane and liquid oxygen. Features copper-alloy regenerative cooling channels and gimbal actuators for thrust vector control.",
-                spec1: "15.4 MEGANNEWTONS",
-                spec2: "CH4 / LOX PROPELLANT",
-                spec3: "ISP: 382 SECONDS",
-                nodeId: "node-thrusters"
-            },
-            {
-                code: "AERO-SURFACE // FIN-TI",
-                name: "Stabilizer Fins",
-                quote: `"Outside, it has stabilizer fins..."`,
-                desc: "Laser-sintered Grade 5 Titanium alloy aerodynamic control surfaces. Hydraulic actuators pivot the fins to maintain attitude stability through dynamic hypersonic pressure.",
-                spec1: "TITANIUM TI-6AL-4V",
-                spec2: "HYDRAULIC 240 BAR",
-                spec3: "MACH 0.8 - 25 STEER",
-                nodeId: "node-fins"
-            },
-            {
-                code: "OPTICS // CUPOLA-04",
-                name: "Observation Windows",
-                quote: `"Outside, it has observation windows..."`,
-                desc: "Reinforced 65mm thick fused silica quartz and borosilicate glass panes. Equipped with electrochromic gold-film coating to filter ultraviolet radiation and cosmic glare.",
-                spec1: "FUSED QUARTZ 65MM",
-                spec2: "99.9% UV SHIELD",
-                spec3: "360° SIGHTLINE",
-                nodeId: "node-windows"
-            },
-            {
-                code: "POWER // PV-ARRAY-05",
-                name: "Solar Panels",
-                quote: `"Outside, it has solar panels."`,
-                desc: "Deployable Gallium-Arsenide triple-junction photovoltaic solar arrays with Kapton film thermal backing. Generates 75 kW of continuous electrical power in Earth orbit.",
-                spec1: "75 KILOWATTS",
-                spec2: "EFFICIENCY: 34.2%",
-                spec3: "GAAS TRIPLE JUNC",
-                nodeId: "node-solar"
-            }
-        ];
-
-        function inspectExteriorPart(index) {
-            playSciFiChime('select');
-            const data = exteriorPartsDB[index];
-
-            // Update text readouts
-            document.getElementById('ext-part-code').innerText = data.code;
-            document.getElementById('ext-part-title').innerText = data.name;
-            document.getElementById('ext-speech-quote').innerText = data.quote;
-            document.getElementById('ext-part-desc').innerText = data.desc;
-            document.getElementById('ext-spec-1').innerText = data.spec1;
-            document.getElementById('ext-spec-2').innerText = data.spec2;
-            document.getElementById('ext-spec-3').innerText = data.spec3;
-
-            // Highlight pills
-            const pills = document.querySelectorAll('.pill-btn');
-            pills.forEach((p, idx) => {
-                if (idx === index) p.classList.add('active-pill');
-                else p.classList.remove('active-pill');
-            });
-
-            // Highlight SVG hotspot nodes
-            const nodes = document.querySelectorAll('.hotspot-node');
-            nodes.forEach(n => n.classList.remove('active-node'));
-            const targetNode = document.getElementById(data.nodeId);
-            if (targetNode) targetNode.classList.add('active-node');
-        }
-
-        /* ================= 6. SLIDE 3: MISSIONS SELECTION ================= */
-        function selectMission(idx, card) {
-            playSciFiChime('select');
-            document.querySelectorAll('.mission-objective-card').forEach(c => c.classList.remove('selected-mission'));
-            card.classList.add('selected-mission');
-        }
-
-        /* ================= 7. SLIDE 4: TELEPROMPTER PHONETICS ================= */
-        function toggleTeleGuide(id) {
-            playSciFiChime('beep');
+        // 5. Ayudante de Pronunciación (Slide 4)
+        function togglePronunciation(id) {
             const el = document.getElementById(id);
-            if (el.style.display === 'block') {
-                el.style.display = 'none';
+            if (el.style.display === "block") {
+                el.style.display = "none";
             } else {
-                el.style.display = 'block';
+                el.style.display = "block";
             }
         }
+
+        // Inicializar
+        updateUI();
     </script>
 </body>
 </html>
